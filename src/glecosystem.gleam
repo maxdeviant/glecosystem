@@ -40,6 +40,7 @@ pub fn main() {
             from: graph,
             with: fn(acc, dependency_name, _) {
               acc
+              |> graph.add_node(Node(key: dependency_name))
               |> graph.add_edge(Edge(
                 key: package.name <> " -> " <> dependency_name,
                 source: package.name,
