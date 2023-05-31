@@ -1,3 +1,14 @@
+#
+# Glecosystem
+#
+
+# Cloned repositories.
+/gleam_repos
+
+#
+# Gleam
+#
+
 *.beam
 *.ez
 build
