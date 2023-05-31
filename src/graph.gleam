@@ -54,7 +54,19 @@ pub fn to_json(graph: Graph) -> json.Json {
 }
 
 fn node_to_json(node: Node) -> json.Json {
-  json.object([#("key", json.string(node.key))])
+  json.object([
+    #("key", json.string(node.key)),
+    #(
+      "attributes",
+      json.object([
+        #("label", json.string(node.key)),
+        #("color", json.string("#ffaaff")),
+        #("size", json.int(10)),
+        #("x", json.int(0)),
+        #("y", json.int(0)),
+      ]),
+    ),
+  ])
 }
 
 fn edge_to_json(edge: Edge) -> json.Json {
