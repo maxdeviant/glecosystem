@@ -7,7 +7,7 @@ pub type Graph {
 }
 
 pub type Node {
-  Node(key: String)
+  Node(key: String, color: String)
 }
 
 pub type Edge {
@@ -60,7 +60,7 @@ fn node_to_json(node: Node) -> json.Json {
       "attributes",
       json.object([
         #("label", json.string(node.key)),
-        #("color", json.string("#ffaaff")),
+        #("color", json.string(node.color)),
         #("size", json.int(10)),
         #("x", json.int(0)),
         #("y", json.int(0)),

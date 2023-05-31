@@ -32,15 +32,33 @@ pub fn main() {
     |> list.fold(
       from: graph.new(),
       with: fn(graph, package) {
+        let is_gleam_package =
+          package_dependencies
+          |> map.has_key(package.name)
+
+        let color = case is_gleam_package {
+          True -> "#ffaff3"
+          False -> "#b83998"
+        }
+
         graph
-        |> graph.add_node(Node(key: package.name))
+        |> graph.add_node(Node(key: package.name, color: color))
         |> fn(graph) {
           package.dependencies
           |> map.fold(
             from: graph,
             with: fn(acc, dependency_name, _) {
+              let is_gleam_package =
+                package_dependencies
+                |> map.has_key(dependency_name)
+
+              let color = case is_gleam_package {
+                True -> "#ffaff3"
+                False -> "#b83998"
+              }
+
               acc
-              |> graph.add_node(Node(key: dependency_name))
+              |> graph.add_node(Node(key: dependency_name, color: color))
               |> graph.add_edge(Edge(
                 key: package.name <> " -> " <> dependency_name,
                 source: package.name,
