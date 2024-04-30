@@ -1,7 +1,10 @@
+import gleam/erlang/process
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/string
 import shellout
+import simplifile
 
 pub fn main() {
   let gleam_repositories = [
@@ -274,28 +277,61 @@ pub fn main() {
   ]
 
   gleam_repositories
-  |> list.each(fn(repo_url) { clone_repository(repo_url, to: "gleam_repos") })
+  |> list.each(fn(repo_url) {
+    let result = clone_repository(repo_url, to: "gleam_repos")
+    case result {
+      Ok(Cached) -> Nil
+      Ok(Cloned) | Ok(Errored) | Error(Nil) -> {
+        process.sleep(1000)
+      }
+    }
+  })
 
   io.println("Finished cloning repositories.")
 }
 
-fn clone_repository(url: String, to repos_directory: String) -> Result(Nil, Nil) {
-  let result =
-    ["clone", url]
-    |> shellout.command(run: "git", in: repos_directory, opt: [])
+type CloneOutcome {
+  Cached
+  Cloned
+  Errored
+}
 
-  case result {
-    Ok(output) -> {
-      io.println(output)
+fn clone_repository(
+  url: String,
+  to repos_directory: String,
+) -> Result(CloneOutcome, Nil) {
+  io.print("Cloning " <> url <> "... ")
+
+  let assert Ok(repo_name) =
+    url
+    |> string.split("/")
+    |> list.last()
+  let repo_directory = repos_directory <> "/" <> repo_name
+
+  case simplifile.verify_is_directory(repo_directory) {
+    Ok(True) -> {
+      io.println("already exists")
+      Ok(Cached)
     }
-    Error(#(code, message)) -> {
-      let code =
-        code
-        |> int.to_string
+    _ -> {
+      let result =
+        ["clone", url]
+        |> shellout.command(run: "git", in: repos_directory, opt: [])
 
-      io.println("git clone exited with code " <> code <> "\n" <> message)
+      case result {
+        Ok(output) -> {
+          io.println(output)
+          Ok(Cloned)
+        }
+        Error(#(code, message)) -> {
+          let code =
+            code
+            |> int.to_string
+
+          io.println("git clone exited with code " <> code <> "\n" <> message)
+          Ok(Errored)
+        }
+      }
     }
   }
-
-  Ok(Nil)
 }
