@@ -1,9 +1,9 @@
-import gleam/json.{Json}
+import gleam/dict.{type Dict}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/map.{Map}
 
 pub type Graph {
-  Graph(nodes: Map(String, Node), edges: Map(String, Edge))
+  Graph(nodes: Dict(String, Node), edges: Dict(String, Edge))
 }
 
 pub type Node {
@@ -15,13 +15,13 @@ pub type Edge {
 }
 
 pub fn new() -> Graph {
-  Graph(nodes: map.new(), edges: map.new())
+  Graph(nodes: dict.new(), edges: dict.new())
 }
 
 pub fn add_node(graph: Graph, node: Node) -> Graph {
   Graph(
     nodes: graph.nodes
-    |> map.insert(node.key, node),
+      |> dict.insert(node.key, node),
     edges: graph.edges,
   )
 }
@@ -30,25 +30,25 @@ pub fn add_edge(graph: Graph, edge: Edge) -> Graph {
   Graph(
     nodes: graph.nodes,
     edges: graph.edges
-    |> map.insert(edge.key, edge),
+      |> dict.insert(edge.key, edge),
   )
 }
 
-pub fn to_json(graph: Graph) -> json.Json {
+pub fn to_json(graph: Graph) -> Json {
   json.object([
     #(
       "nodes",
       graph.nodes
-      |> map.values
-      |> list.map(node_to_json)
-      |> json.preprocessed_array,
+        |> dict.values
+        |> list.map(node_to_json)
+        |> json.preprocessed_array,
     ),
     #(
       "edges",
       graph.edges
-      |> map.values
-      |> list.map(edge_to_json)
-      |> json.preprocessed_array,
+        |> dict.values
+        |> list.map(edge_to_json)
+        |> json.preprocessed_array,
     ),
   ])
 }

@@ -1,18 +1,18 @@
+import gleam/dict.{type Dict}
 import gleam/dynamic as dyn
-import gleam/erlang/file
 import gleam/io
 import gleam/json
 import gleam/list
-import gleam/map.{Map}
 import gleam/result.{try}
 import gleam/string_builder
 import graph.{Edge, Node}
 import rad/toml
-import snag.{Result}
+import simplifile
+import snag.{type Result}
 
 pub fn main() {
   let assert Ok(entries) =
-    file.list_directory("gleam_repos")
+    simplifile.read_directory("gleam_repos")
     |> result.map_error(fn(_reason) { snag.new("Failed to list gleam_repos.") })
 
   let assert Ok(package_dependencies) =
@@ -24,51 +24,45 @@ pub fn main() {
 
       Ok(#(toml.name, toml))
     })
-    |> result.map(map.from_list)
+    |> result.map(dict.from_list)
 
   let graph =
     package_dependencies
-    |> map.values
-    |> list.fold(
-      from: graph.new(),
-      with: fn(graph, package) {
-        let is_gleam_package =
-          package_dependencies
-          |> map.has_key(package.name)
+    |> dict.values
+    |> list.fold(from: graph.new(), with: fn(graph, package) {
+      let is_gleam_package =
+        package_dependencies
+        |> dict.has_key(package.name)
 
-        let color = case is_gleam_package {
-          True -> "#ffaff3"
-          False -> "#b83998"
-        }
+      let color = case is_gleam_package {
+        True -> "#ffaff3"
+        False -> "#b83998"
+      }
 
-        graph
-        |> graph.add_node(Node(key: package.name, color: color))
-        |> fn(graph) {
-          package.dependencies
-          |> map.fold(
-            from: graph,
-            with: fn(acc, dependency_name, _) {
-              let is_gleam_package =
-                package_dependencies
-                |> map.has_key(dependency_name)
+      graph
+      |> graph.add_node(Node(key: package.name, color: color))
+      |> fn(graph) {
+        package.dependencies
+        |> dict.fold(from: graph, with: fn(acc, dependency_name, _) {
+          let is_gleam_package =
+            package_dependencies
+            |> dict.has_key(dependency_name)
 
-              let color = case is_gleam_package {
-                True -> "#ffaff3"
-                False -> "#b83998"
-              }
+          let color = case is_gleam_package {
+            True -> "#ffaff3"
+            False -> "#b83998"
+          }
 
-              acc
-              |> graph.add_node(Node(key: dependency_name, color: color))
-              |> graph.add_edge(Edge(
-                key: package.name <> " -> " <> dependency_name,
-                source: package.name,
-                target: dependency_name,
-              ))
-            },
-          )
-        }
-      },
-    )
+          acc
+          |> graph.add_node(Node(key: dependency_name, color: color))
+          |> graph.add_edge(Edge(
+            key: package.name <> " -> " <> dependency_name,
+            source: package.name,
+            target: dependency_name,
+          ))
+        })
+      }
+    })
 
   let graph_json =
     graph
@@ -84,8 +78,8 @@ pub fn main() {
 type GleamToml {
   GleamToml(
     name: String,
-    dependencies: Map(String, String),
-    dev_dependencies: Map(String, String),
+    dependencies: Dict(String, String),
+    dev_dependencies: Dict(String, String),
   )
 }
 
@@ -100,15 +94,15 @@ fn load_gleam_toml(package_path: String) -> Result(GleamToml) {
   use dependencies <- try(toml.decode(
     toml,
     get: ["dependencies"],
-    expect: dyn.map(dyn.string, dyn.string),
+    expect: dyn.dict(dyn.string, dyn.string),
   ))
   let dev_dependencies =
     toml.decode(
       toml,
       get: ["dev-dependencies"],
-      expect: dyn.map(dyn.string, dyn.string),
+      expect: dyn.dict(dyn.string, dyn.string),
     )
-    |> result.unwrap(map.new())
+    |> result.unwrap(dict.new())
 
   Ok(GleamToml(
     name: name,
